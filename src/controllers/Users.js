@@ -60,11 +60,15 @@ export const Register = async(req, res) => {
 
 export const Login = async(req, res) => {
     try {
-        const user = await Users.findAll({
-            where:{
-                email: req.body.email
-            }
-        });
+        // ORM
+        // const user = await Users.findAll({
+        //     where:{
+        //         email: req.body.email
+        //     }
+        // });
+
+        const [user, metadata] = await db.query(`SELECT * FROM master.users WHERE email = '${req.body.email}'`);
+
         const match = await bcrypt.compare(req.body.password, user[0].password);
 
         if(!match) {
@@ -81,11 +85,14 @@ export const Login = async(req, res) => {
             expiresIn: '1d'
         });
 
-        await Users.update({refresh_token: refreshToken}, {
-            where: {
-                id: userId
-            }
-        });
+        // ORM
+        // const ada = await Users.update({refresh_token: refreshToken}, {
+        //     where: {
+        //         id: userId
+        //     }
+        // });
+        
+        await db.query(`UPDATE master.users SET refresh_token = '${refreshToken}', "updatedAt" = CURRENT_TIMESTAMP WHERE id = '${userId}'`);
 
         res.cookie('refreshTokenFikar', refreshToken, {
             httpOnly: true,
@@ -106,11 +113,14 @@ export const Logout = async(req, res) => {
         return res.sendStatus(204);
     }
 
-    const user = await Users.findAll({
-        where: {
-            refresh_token: refreshToken
-        }
-    });
+    // ORM
+    // const user = await Users.findAll({
+    //     where: {
+    //         refresh_token: refreshToken
+    //     }
+    // });
+
+    const [user, metadata] = await db.query(`SELECT * FROM master.users WHERE refresh_token = '${refreshToken}'`);
 
     if (!user[0]) {
         return res.sendStatus(204);
@@ -118,11 +128,14 @@ export const Logout = async(req, res) => {
 
     const userId = user[0].id;
 
-    await Users.update({ refresh_token: null}, {
-        where: {
-            id: userId
-        }
-    });
+    // ORM
+    // await Users.update({ refresh_token: null}, {
+    //     where: {
+    //         id: userId
+    //     }
+    // });
+
+    await db.query(`UPDATE master.users SET refresh_token = ${null}, "updatedAt" = CURRENT_TIMESTAMP WHERE id = '${userId}'`);
 
     res.clearCookie('refreshTokenFikar');
 
